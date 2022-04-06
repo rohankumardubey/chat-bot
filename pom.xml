@@ -32,6 +32,10 @@
             </snapshots>
         </repository>
         <repository>
+            <id>JCenter</id>
+            <url>https://jcenter.bintray.com</url>
+        </repository>
+        <repository>
             <id>vaadin-prereleases</id>
             <url>
                 https://maven.vaadin.com/vaadin-prereleases/
@@ -122,6 +126,16 @@
             <artifactId>webdrivermanager</artifactId>
             <version>5.0.3</version>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.goldrenard</groupId>
+            <artifactId>ab</artifactId>
+            <version>1.0.7</version>
+        </dependency>
+        <dependency>
+            <groupId>org.vaadin.artur</groupId>
+            <artifactId>avataaar</artifactId>
+            <version>1.0.0</version>
         </dependency>
     </dependencies>
 

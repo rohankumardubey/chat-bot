@@ -4,64 +4,66 @@ import com.example.application.views.MainLayout;
 import com.vaadin.collaborationengine.CollaborationMessageInput;
 import com.vaadin.collaborationengine.CollaborationMessageList;
 import com.vaadin.collaborationengine.UserInfo;
+import com.vaadin.flow.component.Key;
+import com.vaadin.flow.component.UI;
+import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.tabs.Tab;
 import com.vaadin.flow.component.tabs.Tabs;
+import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.router.RouteAlias;
+import org.alicebot.ab.Bot;
+import org.alicebot.ab.Chat;
+import org.vaadin.artur.Avataaar;
+
+import java.util.Random;
 import java.util.UUID;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 @PageTitle("Chat")
 @Route(value = "chat", layout = MainLayout.class)
 @RouteAlias(value = "", layout = MainLayout.class)
 public class ChatView extends VerticalLayout {
+    private final UI ui;
+    private final MessageList messageList = new MessageList();
+    private final TextField message = new TextField();
+    private final Chat chatSession;
+    private final ScheduledExecutorService executorService;
 
-    public ChatView() {
-        addClassName("chat-view");
-        setSpacing(false);
-        // UserInfo is used by Collaboration Engine and is used to share details
-        // of users to each other to able collaboration. Replace this with
-        // information about the actual user that is logged, providing a user
-        // identifier, and the user's real name. You can also provide the users
-        // avatar by passing an url to the image as a third parameter, or by
-        // configuring an `ImageProvider` to `avatarGroup`.
-        UserInfo userInfo = new UserInfo(UUID.randomUUID().toString(), "Steve Lange");
+    public ChatView(Bot alice, ScheduledExecutorService executorService) {
+        this.executorService = executorService;
+        ui = UI.getCurrent();
+        chatSession = new Chat(alice);
+        message.setPlaceholder("Enter a message...");
+        message.setSizeFull();
+        Button send = new Button(VaadinIcon.ENTER.create(), event -> sendMessage());
+        send.addClickShortcut(Key.ENTER);
 
-        // Tabs allow us to change chat rooms.
-        Tabs tabs = new Tabs(new Tab("#general"), new Tab("#support"), new Tab("#casual"));
-        tabs.setWidthFull();
+        HorizontalLayout inputLayout = new HorizontalLayout(message, send);
+        inputLayout.addClassName("inputLayout");
 
-        // `CollaborationMessageList` displays messages that are in a
-        // Collaboration Engine topic. You should give in the user details of
-        // the current user using the component, and a topic Id. Topic id can be
-        // any freeform string. In this template, we have used the format
-        // "chat/#general". Check
-        // https://vaadin.com/docs/latest/ce/collaboration-message-list/#persisting-messages
-        // for information on how to persisting are retrieving messages over
-        // server restarts.
-        CollaborationMessageList list = new CollaborationMessageList(userInfo, "chat/#general");
-        list.setWidthFull();
-        list.addClassNames("chat-view-message-list");
-
-        // `CollaborationMessageInput is a textfield and button, to be able to
-        // submit new messages. To avoid having to set the same info into both
-        // the message list and message input, the input takes in the list as an
-        // constructor argument to get the information from there.
-        CollaborationMessageInput input = new CollaborationMessageInput(list);
-        input.addClassNames("chat-view-message-input");
-        input.setWidthFull();
-
-        // Layouting
-        add(tabs, list, input);
+        add(messageList, inputLayout);
+        expand(messageList);
         setSizeFull();
-        expand(list);
+        setSizeFull();
+    }
 
-        // Change the topic id of the chat when a new tab is selected
-        tabs.addSelectedChangeListener(event -> {
-            String channelName = event.getSelectedTab().getLabel();
-            list.setTopic("chat/" + channelName);
-        });
+    private void sendMessage() {
+        String text = message.getValue();
+        messageList.addMessage("You", new Avataaar("Name"), text, true);
+        message.clear();
+
+        executorService.schedule(() -> {
+                    String answer = chatSession.multisentenceRespond(text);
+                    ui.access(() -> messageList.addMessage(
+                            "Alice", new Avataaar("Alice2"), answer, false));
+                }, new Random().ints(1000, 3000).findFirst().getAsInt(),
+                TimeUnit.MILLISECONDS);
     }
 
 }
